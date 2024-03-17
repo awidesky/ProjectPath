@@ -38,6 +38,9 @@ public class JarPath {
 		if(jarPath != null) return jarPath;
 		return (jarPath = generateProjectPath(JarPath.class, null));
 	}
+	public static String getProjectPath(Class<?> c) {
+		return (jarPath = generateProjectPath(c, classLocationBased(c).get()));
+	}
 	/**
 	 * Return the location of jar file..<p>
 	 * Path of given class is checked for searching the location.
