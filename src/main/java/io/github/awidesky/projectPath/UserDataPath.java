@@ -10,28 +10,37 @@
 package io.github.awidesky.projectPath;
 
 import java.io.File;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class UserDataPath {
-
 	
-	public static String appLocalFolder() {
-		String home = System.getProperty("user.home");
-		String os = System.getProperty("os.name").toLowerCase();
+	private static final String home = System.getProperty("user.home");
+	private static final String os = System.getProperty("os.name").toLowerCase();
+	
+	/***
+	 * Returns application data folder.
+	 * The parameters will be the subfolders under the the user specific local application data folder.<p>
+	 * <ul>
+	 * <li>In MacOS : {@code /Users/(username)/Library/Application Support/subfolders[0]/subfolders[1]/.../subfolders[n]}</li>
+	 * <li>In Windows : {@code C:\Users\(username)\AppData\local\subfolders[0]\subfolders[1]\...\subfolders[n]}</li>
+	 * <li>In Linux : {@code /home/(username)/.local/share/subfolders[0]/subfolders[1]/.../subfolders[n]}</li>
+	 * </ul>
+	 * @param pathNames
+	 * @return
+	 */
+	public static String appLocalFolder(String... subfolders) {
 		String projectPath;
 		if (os.startsWith("mac")) {
-			projectPath = home + "/Library/Application Support/awidesky/YoutubeClipboardAutoDownloader";
+			projectPath = home + "/Library/Application Support".replace('/', File.separatorChar);
 		} else if (os.startsWith("windows")) {
-			projectPath = System.getenv("LOCALAPPDATA") + "\\awidesky\\YoutubeClipboardAutoDownloader";
+			projectPath = System.getenv("LOCALAPPDATA");
 		} else {
 			// Assume linux.
-			projectPath = home + "/.local/share/awidesky/YoutubeClipboardAutoDownloader";
+			projectPath = home + "/.local/share".replace('/', File.separatorChar);
 		}
-		File f = new File(projectPath);
-		f.mkdirs();
-		if (!f.exists()) {
-			SwingDialogs.error("Cannot detect appdata directory!", projectPath + "\nis not a valid data directory!", null, true);
-			Main.kill(ExitCodes.PROJECTPATHNOTFOUND);
-		}
+		projectPath += File.separator + Stream.of(subfolders).collect(Collectors.joining(File.separator));
+		new File(projectPath).mkdirs();
 		return projectPath;
 	}
 	
