@@ -15,8 +15,7 @@ import java.util.stream.Stream;
 
 public class UserDataPath {
 	
-	private static final String home = System.getProperty("user.home");
-	private static final String os = System.getProperty("os.name").toLowerCase();
+	private static final String appLocalRoot = OS.CURRUNTOS.appLocalRoot();
 	
 	/***
 	 * Returns application data folder.
@@ -26,22 +25,11 @@ public class UserDataPath {
 	 * <li>In Windows : {@code C:\Users\(username)\AppData\local\subfolders[0]\subfolders[1]\...\subfolders[n]}</li>
 	 * <li>In Linux : {@code /home/(username)/.local/share/subfolders[0]/subfolders[1]/.../subfolders[n]}</li>
 	 * </ul>
-	 * @param pathNames
-	 * @return
+	 *  
+	 * @param subFolders the names of subdirectories under application local folder
 	 */
-	public static String appLocalFolder(String... subfolders) {
-		String projectPath;
-		if (os.startsWith("mac")) {
-			projectPath = home + "/Library/Application Support".replace('/', File.separatorChar);
-		} else if (os.startsWith("windows")) {
-			projectPath = System.getenv("LOCALAPPDATA");
-		} else {
-			// Assume linux.
-			projectPath = home + "/.local/share".replace('/', File.separatorChar);
-		}
-		projectPath += File.separator + Stream.of(subfolders).collect(Collectors.joining(File.separator));
-		new File(projectPath).mkdirs();
-		return projectPath;
+	public static String appLocalFolder(String... subFolders) {
+		return appLocalRoot + File.separator + Stream.of(subFolders).collect(Collectors.joining(File.separator));
 	}
-	
+
 }
