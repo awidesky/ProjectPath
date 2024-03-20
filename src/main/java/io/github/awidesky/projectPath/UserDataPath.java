@@ -18,7 +18,7 @@ public class UserDataPath {
 	private static final String appLocalRoot = OS.CURRUNTOS.appLocalRoot();
 	
 	/***
-	 * Returns application data folder.
+	 * Returns application local data folder.
 	 * The parameters will be the subfolders under the the user specific local application data folder.<p>
 	 * <ul>
 	 * <li>In MacOS : {@code /Users/(username)/Library/Application Support/subfolders[0]/subfolders[1]/.../subfolders[n]}</li>

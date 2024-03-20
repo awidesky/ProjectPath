@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+
 public class JarPath {
 
 	private static String jarPath = null;
@@ -65,7 +66,7 @@ public class JarPath {
 	 * After calling this method, prefer calling {@code JarPath#getProjectPath()}
 	 * for getting the already generated data without re-generating it.
 	 * 
-	 * @param c
+	 * @param c TODO
 	 * @param file
 	 * @return
 	 */
