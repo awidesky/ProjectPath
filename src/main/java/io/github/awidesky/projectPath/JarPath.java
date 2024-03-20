@@ -14,40 +14,53 @@ import java.io.FileInputStream;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class JarPath {
 
-	public static String jarPath = null;
+	private static String jarPath = null;
 	
 	/***
-	 * Return the location of jar file.<p>
+	 * Return the location of jar file or project path(if run on IDE).<p>
 	 * If it's evaluated before, return the value.
 	 * If not, generate new value.<p>
 	 * 
 	 * Note: when generating new value, this method calls
-	 * {@code JarPath#getProjectPath(Class, String)} with {@code JarPath.class} and empty String,
-	 * which means that the returning path might not precise.
-	 * Prefer calling {@code JarPath#getProjectPath(Class, String)} at the first time.
-	 * @return
+	 * {@code JarPath#getProjectPath(Class, String)} with {@code JarPath.class},
+	 * which means that the returned path points to the directory of a .jar file
+	 * that includes {@code JarPath} class.
+	 * 
+	 * @return a path to the directory of .jar file (or project) that contains this class 
 	 */
 	public static String getProjectPath() {
 		if(jarPath != null) return jarPath;
-		return (jarPath = generateProjectPath(JarPath.class, null));
+		return getProjectPath(JarPath.class);
 	}
+	/***
+	 * Return the location of jar file or project path(if run on IDE).<p>
+	 * If it's evaluated before, return the value.
+	 * If not, generate new value.<p>
+	 * 
+	 * @return a path to the directory of .jar file (or project) that contains given class 
+	 */
 	public static String getProjectPath(Class<?> c) {
-		return (jarPath = generateProjectPath(c, classLocationBased(c).get()));
+		return (jarPath = generateProjectPath(c, new File(classLocationBased(c).get()).getName()));
 	}
 	/**
-	 * Return the location of jar file..<p>
-	 * Path of given class is checked for searching the location.
-	 * If is hard to know exactly where the jar file resides,
-	 * since various candidate returns different values, and it's unavailable
-	 * to check if //TODO
-	 * And given file should exist in the location.<P>
+	 * Return the location of jar file or project path(if run on IDE).<p>
+	 * Given file used to check if it's the right location.
+	 * In default({@code JarPath#getProjectPath(Class)}),
+	 * the name of the jar file(or in IDE, name of {@code bin} or {@code classes} folder) is passed,
+	 * so that we can check if the jar file resides in the one of the candidate paths.
+	 * If there's none, of the pathname is invalid(or {@code null}, the first candidate,
+	 * which is the first element of {@code JarPath#getCandidates(Class)} is returned.
+	 * If all of the candidate is null(normally won't happen), an empty String is return`ed.
+	 * <P>
+	 * 
 	 * Even if it's evaluated before, new value will be generate and stored.<p>
 	 * After calling this method, prefer calling {@code JarPath#getProjectPath()}
 	 * for getting the already generated data without re-generating it.
@@ -62,47 +75,50 @@ public class JarPath {
 	
 	
 	private static String generateProjectPath(Class<?> c, String file) {
-		List<Supplier<String>> projectPathCandidates = List.of(
-				JarPath::jpackage, // System property jpackage.app-path
-				JarPath::propertyBased, // System property java.class.path
-				JarPath.classLocationBased(c), // c.class location
-				JarPath::fileBased // new File("")
-		);
-		return projectPathCandidates.stream().filter(Objects::nonNull).map(candidate -> {
-			String ret = candidate.get();
-			File f = new File(ret).getAbsoluteFile();
-			if(!f.isDirectory()) ret = f.getParentFile().getAbsolutePath();
-			if (System.getProperty("jpackage.app-path") != null && !ret.endsWith("app")) {
-				ret += File.separator + "app";
-			}
-			return ret + file != null ? File.separator + file : "";
-		}).map(File::new).filter(File::exists).map(File::getParentFile).map(File::getAbsolutePath).findFirst().orElse(null);
+		Map<String, Supplier<String>> map = getCandidates(c);
+		return map.values().stream()
+				.map(Supplier::get)
+				.filter(Objects::nonNull)
+				.map(File::new)
+				.filter(f -> file == null || new File(f, file).exists())
+				.map(File::getAbsolutePath)
+				.findFirst()
+				.orElse(map.values().stream()
+						.map(Supplier::get)
+						.filter(Objects::nonNull)
+						.findFirst()
+						.orElse("")
+						);
 	}
+	
+	public static LinkedHashMap<String, Supplier<String>> getCandidates(Class<?> c) {
+		LinkedHashMap<String, Supplier<String>> ret = new LinkedHashMap<>(5);
+		ret.put("System property jpackage.app-path", JarPath::jpackage); 
+		ret.put("System property user.dir", JarPath::property_userdir); //"working directory" approach #1
+		ret.put("new File(\"\")" , JarPath::fileBased); //"working directory" approach #2
+		ret.put(c.getSimpleName() + "Class ProtectionDomain CodeSource location", JarPath.classLocationBased(c)); //"class file path" approach #1
+		ret.put("System property java.class.path", JarPath::property_javaclasspath); //"class file path" approach #2
+		ret.keySet().forEach(k -> ret.put(k, fixPath(ret.get(k))));
+		return ret;
+	}
+	
 	
 	/**
 	 * Get project path by getting system property jpackage
 	 * 
 	 * doesn't work if the application is not packaged by jpackage
 	 * */
-	public static String jpackage() {
+	private static String jpackage() {
 		return System.getProperty("jpackage.app-path");
 	}
 	/**
-	 * Get project path by getting system property java.class.path
+	 * Get project path by getting system property user.dir
 	 * 
-	 * doesn't work in IDE(points bin folder of project root)
+	 * This actually get a working directory, not a path of actual working directory.
+	 * It works at most cases, but not when running the jar by command prompt whose working directory is not where jar file located.
 	 * */
-	public static String propertyBased() {
-		return System.getProperty("java.class.path");
-	}
-	/**
-	 * Get project path by find path of given {@code Class} as an URL and decode as string
-	 * 
-	 * Code from https://stackoverflow.com/a/12733172
-	 * doesn't work in IDE(points bin folder of project root)
-	 * */
-	public static Supplier<String> classLocationBased(Class<?> cl) {
-		return urlToFile(getLocation(cl))::getAbsolutePath;
+	private static String property_userdir() {
+		return System.getProperty("user.dir");
 	}
 	/**
 	 * Get project path by getting absolute path of new File("")
@@ -110,11 +126,41 @@ public class JarPath {
 	 * This actually get a working directory, not a path of actual working directory.
 	 * It works at most cases, but not when running the jar by command prompt whose working directory is not where jar file located.   
 	 * */
-	public static String fileBased() {
+	private static String fileBased() {
 		return new File("").getAbsolutePath();
+	}
+	/**
+	 * Get project path by getting system property java.class.path
+	 * 
+	 * doesn't work in IDE(points bin folder of target/classes)
+	 * */
+	private static String property_javaclasspath() {
+		return System.getProperty("java.class.path").split(File.pathSeparator)[0];
+	}
+	/**
+	 * Get project path by find path of given {@code Class} as an URL and decode as string
+	 * 
+	 * Code from https://stackoverflow.com/a/12733172
+	 * doesn't work in IDE(points bin folder of target/classes)
+	 * */
+	private static Supplier<String> classLocationBased(Class<?> cl) {
+		return () -> urlToFile(getLocation(cl)).getAbsolutePath();
 	}
 	
 	
+	private static Supplier<String> fixPath(Supplier<String> candidate) {
+		return () -> {
+			String get = candidate.get();
+			if(get == null) return null;
+			File f = new File(get).getAbsoluteFile();
+			while (!f.isDirectory()) f = f.getParentFile();
+			String ret = f.getAbsolutePath();
+			if (System.getProperty("jpackage.app-path") != null && !ret.endsWith("app")) {
+				ret += File.separator + "app";
+			}
+			return ret;
+		};
+	}
 	
 	
 	/**
