@@ -64,7 +64,7 @@ public class Test {
 
 
 
-### Result in MacOS
+### Results in MacOS
 
 Run in eclipse :
 
@@ -86,4 +86,22 @@ UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : /Users/userna
 
 
 
+### Results in Windows
 
+Run in eclipse :
+
+```
+JarPath.getProjectPath() : C:\Users\username\eclipse-workspace\Test
+JarPath.getProjectPath(Test.class) : C:\Users\username\eclipse-workspace\Test
+JarPath.getProjectPath(Test.class, "myResource.txt") : C:\Users\username\eclipse-workspace\Test
+UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : C:\Users\username\AppData\Local\awidesky\ProjectPath\config
+```
+
+Put `Test.jar` in Documents folder, and run with `java -jar Test.jar` 
+
+```
+JarPath.getProjectPath() : C:\Users\username\Documents
+JarPath.getProjectPath(Test.class) : C:\Users\username\Documents
+JarPath.getProjectPath(Test.class, "myResource.txt") : C:\Users\username\Documents
+UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : C:\Users\username\AppData\Local\awidesky\ProjectPath\config
+```
