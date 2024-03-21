@@ -6,11 +6,11 @@
 
 ## Requirements
 
-**ProjectPath** requires Java 8 or later, and it does not need any dependency.
+**ProjectPath** requires Java 8 or later, and it does not need any other dependency.
 
 ## How to use
 
-[Add dependency](https://central.sonatype.com/artifact/io.github.awidesky/ProjectPath) to your `pom.xml`  download `.jar` file from [release](https://github.com/awidesky/ProjectPath/releases) and add to classpath.
+[Add dependency](https://central.sonatype.com/artifact/io.github.awidesky/ProjectPath) to your `pom.xml` or download `.jar` file from [release](https://github.com/awidesky/ProjectPath/releases) and add to classpath.
 
 ## Examples
 
