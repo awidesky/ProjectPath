@@ -12,6 +12,7 @@ package io.github.awidesky.projectPath;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.LinkedHashMap;
@@ -214,9 +215,9 @@ public class JarPath {
 	    if (path.startsWith("jar:")) path = path.substring(4, path.length() - 2);
 
 	    try {
-	        return new URL(path);
+	        return new URI(path).toURL();
 	    }
-	    catch (final MalformedURLException e) {
+	    catch (final MalformedURLException | URISyntaxException e) {
 	    	e.printStackTrace();
 	        return null;
 	    }
@@ -256,9 +257,9 @@ public class JarPath {
 	        if (System.getProperty("os.name").startsWith("Windows") && FILEURLPATTERN.matcher(path).matches()) {
 	            path = "file:/" + path.substring(5);
 	        }
-	        return new File(new URL(path).toURI());
+	        return new File(new URI(path));
 	    }
-	    catch (final MalformedURLException | URISyntaxException e) {
+	    catch (final URISyntaxException e) {
 	    	e.printStackTrace();
 	    }
 	    if (path.startsWith("file:")) {
