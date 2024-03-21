@@ -105,3 +105,17 @@ JarPath.getProjectPath(Test.class) : C:\Users\username\Documents
 JarPath.getProjectPath(Test.class, "myResource.txt") : C:\Users\username\Documents
 UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : C:\Users\username\AppData\Local\awidesky\ProjectPath\config
 ```
+
+
+
+### Results in Linux
+
+Put `Test.jar` in Documents folder, and run with `java -jar Test.jar` 
+
+```
+JarPath.getProjectPath() : /home/username/Documents
+JarPath.getProjectPath(Test.class) : /home/username/Documents
+JarPath.getProjectPath(Test.class, "myResource.txt") : /home/username/Documents
+UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : /home/username/.local/share/awidesky/ProjectPath/config
+```
+
