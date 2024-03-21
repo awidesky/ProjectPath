@@ -25,40 +25,42 @@ import io.github.awidesky.projectPath.JarPath;
 import io.github.awidesky.projectPath.UserDataPath;
 
 public class Test {
-	public static void main(String[] args) {
-		/*
-		 * Actually calls JarPath.getProjectPath(JarPath.class)
-		 * May not work if ProjectPath library is in another location. 
-		 */
-		System.out.println("JarPath.getProjectPath() : "
-				+ JarPath.getProjectPath());
-		/*
-		 * If Test.class is packaged into a .jar file,
-		 * JarPath will retrieve the name of .jar file that contains given class(Test.class),
-		 * and check the .jar file resides in one of the candidate paths.
-		 * 
-		 * If Test.class is not packaged into a .jar file
-		 * JarPath cannot make sure, so the most-likly candidate will be returned.
-		 */
-		System.out.println("JarPath.getProjectPath(Test.class) : "
-				+ JarPath.getProjectPath(Test.class));
-		/*
-		 * In this case, JarPath does not check existence of .jar file.
-		 * Instead, it checks if given file resides in any of the candidate paths.
-		 * 
-		 * If the given file does not exists in any of the candidates,
-		 * JarPath cannot make sure, so the most-likly candidate will be returned.
-		 */
-		System.out.println("JarPath.getProjectPath(Test.class, \"myResource.txt\") : "
-				+ JarPath.getProjectPath(Test.class, "myResource.txt"));
-		/*
-		 * UserDataPath finds application local data folder.
-		 * Parameters(optional) will be resolved as subdirectories of the folder.
-		 * Note that resolved folder will not created.  
-		 */
-		System.out.println("UserDataPath.appLocalFolder(\"awidesky\", \"ProjectPath\", \"config\") : "
-				+ UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config"));
-	}
+  public static void main(String[] args) {
+    /*
+     * Actually calls JarPath.getProjectPath(JarPath.class)
+     * May not work if ProjectPath library is in another location. 
+     */
+    System.out.println("Project path : "
+        + JarPath.getProjectPath());
+    /*
+     * If Test.class is packaged into a .jar file,
+     * JarPath will retrieve the name of .jar file that contains given class(Test.class),
+     * and check the .jar file resides in one of the candidate paths.
+     * 
+     * If Test.class is not packaged into a .jar file
+     * JarPath cannot make sure, so the most-likly candidate will be returned.
+     * (will yield same results with JarPath.getProjectPath())
+     */
+    //System.out.println("JarPath.getProjectPath(Test.class) : "
+    //    + JarPath.getProjectPath(Test.class));
+    /*
+     * In this case, JarPath does not check existence of .jar file.
+     * Instead, it checks if given file resides in any of the candidate paths.
+     * 
+     * If the given file does not exists in any of the candidates,
+     * JarPath cannot make sure, so the most-likly candidate will be returned.
+     * (will yield same results with JarPath.getProjectPath())
+     */
+    //System.out.println("JarPath.getProjectPath(Test.class, \"myResource.txt\") : "
+    //    + JarPath.getProjectPath(Test.class, "myResource.txt"));
+    /*
+     * UserDataPath finds application local data folder.
+     * Parameters(optional) will be resolved as subdirectories of the folder.
+     * Note that resolved folder will not created.  
+     */
+    System.out.println("App data path : "
+        + UserDataPath.appLocalFolder("myapp", "config"));
+  }
 }
 ```
 
@@ -69,19 +71,15 @@ public class Test {
 Run in eclipse :
 
 ```
-JarPath.getProjectPath() : /Users/username/eclipse-workspace/Test
-JarPath.getProjectPath(Test.class) : /Users/username/eclipse-workspace/Test
-JarPath.getProjectPath(Test.class, "myResource.txt") : /Users/username/eclipse-workspace/Test
-UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : /Users/username/Library/Application Support/awidesky/ProjectPath/config
+Project path : /Users/username/eclipse-workspace/Test
+App data path : /Users/username/Library/Application Support/myapp/config
 ```
 
 Put `Test.jar` in Documents folder, and run with `java -jar Test.jar` 
 
 ```
-JarPath.getProjectPath() : /Users/username/Documents
-JarPath.getProjectPath(Test.class) : /Users/username/Documents
-JarPath.getProjectPath(Test.class, "myResource.txt") : /Users/username/Documents
-UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : /Users/username/Library/Application Support/awidesky/ProjectPath/config
+Project path : /Users/username/Documents
+App data path : /Users/username/Library/Application Support/myapp/config
 ```
 
 
@@ -91,19 +89,15 @@ UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : /Users/userna
 Run in eclipse :
 
 ```
-JarPath.getProjectPath() : C:\Users\username\eclipse-workspace\Test
-JarPath.getProjectPath(Test.class) : C:\Users\username\eclipse-workspace\Test
-JarPath.getProjectPath(Test.class, "myResource.txt") : C:\Users\username\eclipse-workspace\Test
-UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : C:\Users\username\AppData\Local\awidesky\ProjectPath\config
+Project path : C:\Users\username\eclipse-workspace\Test
+App data path : C:\Users\username\AppData\Local\myapp\config
 ```
 
 Put `Test.jar` in Documents folder, and run with `java -jar Test.jar` 
 
 ```
-JarPath.getProjectPath() : C:\Users\username\Documents
-JarPath.getProjectPath(Test.class) : C:\Users\username\Documents
-JarPath.getProjectPath(Test.class, "myResource.txt") : C:\Users\username\Documents
-UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : C:\Users\username\AppData\Local\awidesky\ProjectPath\config
+Project path : C:\Users\username\Documents
+App data path : C:\Users\username\AppData\Local\myapp\config
 ```
 
 
@@ -113,9 +107,7 @@ UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : C:\Users\user
 Put `Test.jar` in Documents folder, and run with `java -jar Test.jar` 
 
 ```
-JarPath.getProjectPath() : /home/username/Documents
-JarPath.getProjectPath(Test.class) : /home/username/Documents
-JarPath.getProjectPath(Test.class, "myResource.txt") : /home/username/Documents
-UserDataPath.appLocalFolder("awidesky", "ProjectPath", "config") : /home/username/.local/share/awidesky/ProjectPath/config
+Project path : /home/username/Documents
+App data path : /home/username/.local/share/myapp/config
 ```
 
