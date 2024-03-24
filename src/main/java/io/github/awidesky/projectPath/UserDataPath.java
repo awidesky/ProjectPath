@@ -13,6 +13,16 @@ import java.io.File;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Generate user's application local data folder.
+ * <p>
+ * <ul>
+ * <li>In MacOS : {@code /Users/(username)/Library/Application Support}</li>
+ * <li>In Windows : {@code C:\Users\(username)\AppData\local}</li>
+ * <li>In Linux : {@code /home/(username)/.local/share}</li>
+ * </ul>
+ * 
+ */
 public class UserDataPath {
 	
 	private static final String appLocalRoot = OS.CURRUNTOS.appLocalRoot();

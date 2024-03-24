@@ -21,7 +21,16 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-
+/***
+ * Provides location of the running .jar file, or project's root folder(if run on IDE).
+ * {@code JarPath} needs a proper {@code Class} instance of a class that's packaged into
+ * the running .jar file to find the location of it.
+ * If none was provided, {@code JarPath} will use {@code JarPath.class}, which means
+ * it considers the {@code JarPath} class is packaged into the main .jar file.<P>
+ * 
+ * Return value of last call is cached; {@code JarPath#getProjectPath()}
+ * will return the cached value without re-evalueation if present.
+ */
 public class JarPath {
 
 	private static String jarPath = null;
@@ -47,6 +56,7 @@ public class JarPath {
 	 * If it's evaluated before, return the value.
 	 * If not, generate new value.<p>
 	 * 
+	 * @param c a class whose .class file resides inside of running .jar
 	 * @return a path to the directory of .jar file (or project) that contains given class 
 	 */
 	public static String getProjectPath(Class<?> c) {
@@ -66,10 +76,10 @@ public class JarPath {
 	 * Even if it's evaluated before, new value will be generate and stored.<p>
 	 * After calling this method, prefer calling {@code JarPath#getProjectPath()}
 	 * for getting the already generated data without re-generating it.
-	 * 
-	 * @param c TODO
-	 * @param file
-	 * @return
+	 *
+	 * @param c a class whose .class file resides inside of running .jar
+	 * @param file a file that has to exist in desired directory
+	 * @return a path to the directory of .jar file (or project) that contains this class 
 	 */
 	public static String getProjectPath(Class<?> c, String file) {
 		return (jarPath = generateProjectPath(c, file));
