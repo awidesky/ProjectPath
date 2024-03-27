@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.awidesky</groupId>
 	<artifactId>ProjectPath</artifactId>
-	<version>1.0.0</version>
+	<version>1.1.0</version>
 	<name>ProjectPath</name>
 	<description>provides paths for application to store user-specific data or find resources with plain Java.</description>
 	<url>https://github.com/awidesky/ProjectPath</url>

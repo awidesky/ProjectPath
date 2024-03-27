@@ -34,6 +34,11 @@ class Test {
      */
     //System.out.println("JarPath.getProjectPath(Test.class, \"myResource.txt\") : "
     //    + JarPath.getProjectPath(Test.class, "myResource.txt"));
+	/*
+	 * Get name of the jar file contains given class
+	 */
+	System.out.println("Name of jar file contains JarPath.class : "
+			+ JarPath.getJarName(JarPath.class));
     /*
      * UserDataPath finds application local data folder.
      * Parameters(optional) will be resolved as subdirectories of the folder.

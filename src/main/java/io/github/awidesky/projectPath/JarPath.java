@@ -60,7 +60,19 @@ public class JarPath {
 	 * @return a path to the directory of .jar file (or project) that contains given class 
 	 */
 	public static String getProjectPath(Class<?> c) {
-		return (jarPath = generateProjectPath(c, new File(classLocationBased(c).get()).getName()));
+		return (jarPath = generateProjectPath(c, getJarName(c)));
+	}
+	
+	/***
+	 * Returns the name of the .jar file that contains given class.
+	 * 
+	 * @param c a class whose .class file resides inside of running .jar
+	 * @return the name of .jar file, or {@code null}
+	 */
+	public static String getJarName(Class<?> c) {
+		String ret = new File(classLocationBased(c).get()).getName();
+		if(!ret.endsWith(".jar")) ret = null;
+		return ret;
 	}
 	/**
 	 * Return the location of jar file or project path(if run on IDE).<p>

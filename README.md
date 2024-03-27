@@ -53,6 +53,11 @@ public class Test {
      */
     //System.out.println("JarPath.getProjectPath(Test.class, \"myResource.txt\") : "
     //    + JarPath.getProjectPath(Test.class, "myResource.txt"));
+	/*
+	 * Get name of the jar file contains given class
+	 */
+	System.out.println("Name of jar file contains JarPath.class : "
+		+ JarPath.getJarName(JarPath.class));
     /*
      * UserDataPath finds application local data folder.
      * Parameters(optional) will be resolved as subdirectories of the folder.
@@ -72,6 +77,7 @@ Run in eclipse :
 
 ```
 Project path : /Users/username/eclipse-workspace/Test
+Name of jar file contains JarPath.class : null
 App data path : /Users/username/Library/Application Support/myapp/config
 ```
 
@@ -79,6 +85,7 @@ Put `Test.jar` in Documents folder, and run with `java -jar Test.jar`
 
 ```
 Project path : /Users/username/Documents
+Name of jar file contains JarPath.class : Test.jar
 App data path : /Users/username/Library/Application Support/myapp/config
 ```
 
@@ -90,6 +97,7 @@ Run in eclipse :
 
 ```
 Project path : C:\Users\username\eclipse-workspace\Test
+Name of jar file contains JarPath.class : null
 App data path : C:\Users\username\AppData\Local\myapp\config
 ```
 
@@ -97,6 +105,7 @@ Put `Test.jar` in Documents folder, and run with `java -jar Test.jar`
 
 ```
 Project path : C:\Users\username\Documents
+Name of jar file contains JarPath.class : Test.jar
 App data path : C:\Users\username\AppData\Local\myapp\config
 ```
 
@@ -108,6 +117,7 @@ Put `Test.jar` in Documents folder, and run with `java -jar Test.jar`
 
 ```
 Project path : /home/username/Documents
+Name of jar file contains JarPath.class : Test.jar
 App data path : /home/username/.local/share/myapp/config
 ```
 
