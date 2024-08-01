@@ -42,4 +42,18 @@ public class UserDataPath {
 		return appLocalRoot + File.separator + Stream.of(subFolders).collect(Collectors.joining(File.separator));
 	}
 
+	/**
+	 * Returns Windows-only appdata roaming folder.
+	 * Such as : {@code C:\\Users\\username\\AppData\\Roaming}.
+	 * <p>If the OS is not Windows, ther returned value will be same as {@code UserDataPath#appLocalRoot}.
+	 * 
+	 * @param subFolders the names of subdirectories under application local folder
+	 */
+	public static String getWindowsAppdataRoamingFolder(String... subFolders) {
+		String ret = appLocalFolder(subFolders);
+		if(OS.CURRUNTOS == OS.WINDOWS && ret.contains("AppData\\Local")) {
+			ret = ret.replace("AppData\\Local", "AppData\\Roaming");
+		}
+		return ret;
+	}
 }
