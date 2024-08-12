@@ -46,5 +46,16 @@ class Test {
      */
     System.out.println("App data path : "
         + UserDataPath.appLocalFolder("myapp", "config"));
+    /*
+     * *** Windows Exclusive Feature ***
+     * On other OS, the returned value is identical to UserDataPath.appLocalFolder()
+     * 
+     * UserDataPath finds appdata roaming folder.
+     * Parameters(optional) will be resolved as subdirectories of the folder.
+     * Note that resolved folder will not created.  
+     */
+    if(OS.CURRUNTOS == OS.WINDOWS)
+    System.out.println("Windows Appdata\\Roaming path : "
+    		+ UserDataPath.getWindowsAppdataRoamingFolder("myapp", "config"));
   }
 }
