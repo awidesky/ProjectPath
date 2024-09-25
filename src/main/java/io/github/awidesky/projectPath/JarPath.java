@@ -71,6 +71,7 @@ public class JarPath {
 	 */
 	public static String getJarName(Class<?> c) {
 		String ret = new File(classLocationBased(c).get()).getName();
+		System.out.println("getJarName : " + ret); //TODO
 		if(!ret.endsWith(".jar")) ret = null;
 		return ret;
 	}
@@ -106,6 +107,7 @@ public class JarPath {
 				.map(File::new)
 				.filter(f -> file == null || new File(f, file).exists())
 				.map(File::getAbsolutePath)
+				.peek(s -> System.out.println("generateProjectPath : " + s)) //TODO
 				.findFirst()
 				.orElse(map.values().stream()
 						.map(Supplier::get)
@@ -167,8 +169,10 @@ public class JarPath {
 	 * Code from https://stackoverflow.com/a/12733172
 	 * doesn't work in IDE(points bin folder of target/classes)
 	 * */
-	private static Supplier<String> classLocationBased(Class<?> cl) {
-		return () -> urlToFile(getLocation(cl)).getAbsolutePath();
+	private static Supplier<String> classLocationBased(Class<?> cl) { 
+		URL todo = getLocation(cl);
+		System.out.println("classLocationBased : " + todo.toString()); //TODO
+		return () -> urlToFile(todo).getAbsolutePath();
 	}
 	
 	
@@ -210,7 +214,9 @@ public class JarPath {
 	    try {
 	        final URL codeSourceLocation =
 	            c.getProtectionDomain().getCodeSource().getLocation();
-	        if (codeSourceLocation != null) return codeSourceLocation;
+	        System.out.println("codeSourceLocation : " + codeSourceLocation);
+	        if (codeSourceLocation != null && !codeSourceLocation.toExternalForm().startsWith("rsrc"))
+	        	return codeSourceLocation;
 	    }
 	    catch (SecurityException | NullPointerException e) {
 	    	e.printStackTrace();
@@ -236,7 +242,9 @@ public class JarPath {
 	    // remove the "jar:" prefix and "!/" suffix, if present
 	    if (path.startsWith("jar:")) path = path.substring(4, path.length() - 2);
 
+	    System.out.println("getLocation : " + path); //TODO
 	    try {
+	    	System.out.println("getLocation new URI(path).toURL(): " + new URI(path).toURL()); //TODO
 	        return new URI(path).toURL();
 	    }
 	    catch (final MalformedURLException | URISyntaxException e) {
@@ -275,10 +283,12 @@ public class JarPath {
 	        final int index = path.indexOf("!/");
 	        path = path.substring(4, index);
 	    }
+	    System.out.println("urlToFile11 : " + path); //TODO
 	    try {
 	        if (System.getProperty("os.name").startsWith("Windows") && FILEURLPATTERN.matcher(path).matches()) {
 	            path = "file:/" + path.substring(5);
 	        }
+	        System.out.println("urlToFile11 : " + path); //TODO
 	        return new File(new URI(path));
 	    }
 	    catch (final URISyntaxException e) {
@@ -289,6 +299,7 @@ public class JarPath {
 	        path = path.substring(5);
 	        return new File(path);
 	    }
+	    System.out.println("Invalid url : " + url);
 	    return null;
 	}
 }
