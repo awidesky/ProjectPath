@@ -70,9 +70,12 @@ public class JarPath {
 	 * @return the name of .jar file, or {@code null}
 	 */
 	public static String getJarName(Class<?> c) {
-		String ret = new File(classLocationBased(c).get()).getName();
-		System.out.println("getJarName : " + ret); //TODO
-		if(!ret.endsWith(".jar")) ret = null;
+		String ret = null;
+		try {
+			ret = new File(classLocationBased(c).get()).getName();
+			System.out.println("getJarName : " + ret); //TODO
+			if(!ret.endsWith(".jar")) ret = null;
+		} catch (Exception e) {}
 		return ret;
 	}
 	/**
@@ -102,9 +105,10 @@ public class JarPath {
 	private static String generateProjectPath(Class<?> c, String file) {
 		Map<String, Supplier<String>> map = getCandidates(c);
 		return map.values().stream()
-				.map(Supplier::get)
+				.map(JarPath::getSupplier)
 				.filter(Objects::nonNull)
 				.map(File::new)
+				.filter(File::exists)
 				.filter(f -> file == null || new File(f, file).exists())
 				.map(File::getAbsolutePath)
 				.peek(s -> System.out.println("generateProjectPath : " + s)) //TODO
@@ -115,6 +119,14 @@ public class JarPath {
 						.findFirst()
 						.orElse("")
 						);
+	}
+	
+	private static String getSupplier(Supplier<String> suppl) {
+		try {
+			return suppl.get();
+		} catch (Exception e) {
+			return null;
+		}
 	}
 	
 	public static LinkedHashMap<String, Supplier<String>> getCandidates(Class<?> c) {
