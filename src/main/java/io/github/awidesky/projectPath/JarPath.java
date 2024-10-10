@@ -73,7 +73,6 @@ public class JarPath {
 		String ret = null;
 		try {
 			ret = new File(classLocationBased(c).get()).getName();
-			System.out.println("getJarName : " + ret); //TODO
 			if(!ret.endsWith(".jar")) ret = null;
 		} catch (Exception e) {}
 		return ret;
@@ -111,7 +110,6 @@ public class JarPath {
 				.filter(File::exists)
 				.filter(f -> file == null || new File(f, file).exists())
 				.map(File::getAbsolutePath)
-				.peek(s -> System.out.println("generateProjectPath : " + s)) //TODO
 				.findFirst()
 				.orElse(map.values().stream()
 						.map(Supplier::get)
@@ -132,7 +130,7 @@ public class JarPath {
 	public static LinkedHashMap<String, Supplier<String>> getCandidates(Class<?> c) {
 		LinkedHashMap<String, Supplier<String>> ret = new LinkedHashMap<>(5);
 		ret.put("System property jpackage.app-path", JarPath::jpackage); 
-		ret.put("System property user.dir", JarPath::property_userdir); //"working directory" approach #1
+		ret.put("System property user.dir", JarPath::property_userdir); //"working directory" approach #1 TODO : class file path approach first!
 		ret.put("new File(\"\")" , JarPath::fileBased); //"working directory" approach #2
 		ret.put(c.getSimpleName() + "Class ProtectionDomain CodeSource location", JarPath.classLocationBased(c)); //"class file path" approach #1
 		ret.put("System property java.class.path", JarPath::property_javaclasspath); //"class file path" approach #2
@@ -182,15 +180,16 @@ public class JarPath {
 	 * doesn't work in IDE(points bin folder of target/classes)
 	 * */
 	private static Supplier<String> classLocationBased(Class<?> cl) { 
-		URL todo = getLocation(cl);
-		System.out.println("classLocationBased : " + todo.toString()); //TODO
-		return () -> urlToFile(todo).getAbsolutePath();
+		return () -> urlToFile(getLocation(cl)).getAbsolutePath();
 	}
 	
 	
 	private static Supplier<String> fixPath(Supplier<String> candidate) {
 		return () -> {
-			String get = candidate.get();
+			String get = null;
+			try {
+				get = candidate.get();
+			} catch(Exception e) {}
 			if(get == null) return null;
 			File f = new File(get).getAbsoluteFile();
 			while (!f.isDirectory()) f = f.getParentFile();
@@ -226,7 +225,6 @@ public class JarPath {
 	    try {
 	        final URL codeSourceLocation =
 	            c.getProtectionDomain().getCodeSource().getLocation();
-	        System.out.println("codeSourceLocation : " + codeSourceLocation);
 	        if (codeSourceLocation != null && !codeSourceLocation.toExternalForm().startsWith("rsrc"))
 	        	return codeSourceLocation;
 	    }
@@ -254,13 +252,9 @@ public class JarPath {
 	    // remove the "jar:" prefix and "!/" suffix, if present
 	    if (path.startsWith("jar:")) path = path.substring(4, path.length() - 2);
 
-	    System.out.println("getLocation : " + path); //TODO
 	    try {
-	    	System.out.println("getLocation new URI(path).toURL(): " + new URI(path).toURL()); //TODO
 	        return new URI(path).toURL();
-	    }
-	    catch (final MalformedURLException | URISyntaxException e) {
-	    	e.printStackTrace();
+	    } catch (MalformedURLException | URISyntaxException e) {
 	        return null;
 	    }
 	} 
@@ -295,12 +289,10 @@ public class JarPath {
 	        final int index = path.indexOf("!/");
 	        path = path.substring(4, index);
 	    }
-	    System.out.println("urlToFile11 : " + path); //TODO
 	    try {
 	        if (System.getProperty("os.name").startsWith("Windows") && FILEURLPATTERN.matcher(path).matches()) {
 	            path = "file:/" + path.substring(5);
 	        }
-	        System.out.println("urlToFile11 : " + path); //TODO
 	        return new File(new URI(path));
 	    }
 	    catch (final URISyntaxException e) {
