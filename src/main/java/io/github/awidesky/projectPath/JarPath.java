@@ -130,10 +130,10 @@ public class JarPath {
 	public static LinkedHashMap<String, Supplier<String>> getCandidates(Class<?> c) {
 		LinkedHashMap<String, Supplier<String>> ret = new LinkedHashMap<>(5);
 		ret.put("System property jpackage.app-path", JarPath::jpackage); 
-		ret.put("System property user.dir", JarPath::property_userdir); //"working directory" approach #1 TODO : class file path approach first!
-		ret.put("new File(\"\")" , JarPath::fileBased); //"working directory" approach #2
 		ret.put(c.getSimpleName() + "Class ProtectionDomain CodeSource location", JarPath.classLocationBased(c)); //"class file path" approach #1
 		ret.put("System property java.class.path", JarPath::property_javaclasspath); //"class file path" approach #2
+		ret.put("System property user.dir", JarPath::property_userdir); //"working directory" approach #1
+		ret.put("new File(\"\")" , JarPath::fileBased); //"working directory" approach #2
 		ret.keySet().forEach(k -> ret.put(k, fixPath(ret.get(k))));
 		return ret;
 	}
