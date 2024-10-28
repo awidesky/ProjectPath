@@ -15,8 +15,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -26,14 +27,72 @@ import java.util.regex.Pattern;
  * {@code JarPath} needs a proper {@code Class} instance of a class that's packaged into
  * the running .jar file to find the location of it.
  * If none was provided, {@code JarPath} will use {@code JarPath.class}, which means
- * it considers the {@code JarPath} class is packaged into the main .jar file.<P>
+ * it considers the {@code JarPath} class is packaged into the main .jar file.<p>
  * 
  * Return value of last call is cached; {@code JarPath#getProjectPath()}
- * will return the cached value without re-evalueation if present.
+ * will return the cached value without re-evalueation if present.<p>
+ * 
+ * <ul>
+ * There are two main "approaches" to find the path.
+ * 	<li>"working directory" approach</li>
+ * 	<ul>
+ * 		<li>Tries to get the working directory.</il>
+ * 		<li>It works at most cases, but not when running the jar by command prompt
+ * 			whose working directory is not where jar file located.</li>
+ * 	</ul>
+ * 	<li>"class file path" approach</li>
+ * 	<ul>
+ * 		<li>Tries to get project path by searching path of the classes inside of jar/project</il>
+ * 		<li>Evaluates system property {@code java.class.path} or absolute path of {@code new File("")} </il>
+ * 		<li>Doesn't work in IDE(points bin folder of target/classes).</li>
+ * 	</ul>
+ * </ul>
+ * The "working directory" approach is used first, and this behavior can change via
+ * {@link JarPath#setClassPathSearchFirst(boolean)}.
  */
 public class JarPath {
 
+	private static boolean classPathSearchFirst = false;
 	private static String jarPath = null;
+	private static boolean debug = false;
+	
+	/**
+	 * Returns {@code true} if debug mode.
+	 * In debug mode, exception message is printed for each candidate.
+	 * <br>If {@link JarPath#getProjectPath()} returns invalid path or fails,
+	 * try setting debug mode and call {@link JarPath#getProjectPath(Class)}
+	 * again to see why candidates fail.
+	 *  
+	 * @return {@code true} if debug mode.
+	 */
+	public static boolean isDebug() {
+		return debug;
+	}
+	
+	/**
+	 * Sets debug mode. Default is {@code false}.
+	 * 
+	 * @param debug new debug mode.
+	 */
+	public static void setDebug(boolean debug) {
+		JarPath.debug = debug;
+	}
+	
+	/**
+	 * Checks if "class file path approach" is tried before "working directory approach".<br>
+	 * The default value is {@code false}.
+	 * @return {@code true} if "class file path approach" is tried before "working directory approach".
+	 */
+	public static boolean isClassPathSearchFirst() {
+		return classPathSearchFirst;
+	}
+	/**
+	 * Sets whether "class file path approach" is tried before "working directory approach" or not.<br>
+	 * The default value is {@code false}.
+	 */
+	public static void setClassPathSearchFirst(boolean classFileSearchFirst) {
+		JarPath.classPathSearchFirst = classFileSearchFirst;
+	}
 	
 	/***
 	 * Return the location of jar file or project path(if run on IDE).<p>
@@ -74,7 +133,9 @@ public class JarPath {
 		try {
 			ret = new File(classLocationBased(c).get()).getName();
 			if(!ret.endsWith(".jar")) ret = null;
-		} catch (Exception e) {}
+		} catch (Exception e) {
+			if(isDebug()) e.printStackTrace();
+		}
 		return ret;
 	}
 	/**
@@ -102,42 +163,103 @@ public class JarPath {
 	
 	
 	private static String generateProjectPath(Class<?> c, String file) {
-		Map<String, Supplier<String>> map = getCandidates(c);
-		return map.values().stream()
-				.map(JarPath::getSupplier)
+		List<CandidateEntry> list = getCandidates(c);
+		return list.stream()
+				.map(CandidateEntry::generatePath)
 				.filter(Objects::nonNull)
 				.map(File::new)
 				.filter(File::exists)
 				.filter(f -> file == null || new File(f, file).exists())
 				.map(File::getAbsolutePath)
 				.findFirst()
-				.orElse(map.values().stream()
-						.map(Supplier::get)
-						.filter(Objects::nonNull)
-						.findFirst()
-						.orElse("")
-						);
+				.orElseGet(() -> {
+					if(isDebug()) System.out.println("[JarPath|debug] Unable to find. just return the first non-null thing or empty String");
+					return list.stream() //unable to find. just return the first non-null thing
+							.map(CandidateEntry::generatePath)
+							.filter(Objects::nonNull)
+							.findFirst()
+							.orElse("");
+				});
 	}
 	
-	private static String getSupplier(Supplier<String> suppl) {
-		try {
-			return suppl.get();
-		} catch (Exception e) {
-			return null;
-		}
-	}
-	
-	public static LinkedHashMap<String, Supplier<String>> getCandidates(Class<?> c) {
-		LinkedHashMap<String, Supplier<String>> ret = new LinkedHashMap<>(5);
-		ret.put("System property jpackage.app-path", JarPath::jpackage); 
-		ret.put(c.getSimpleName() + "Class ProtectionDomain CodeSource location", JarPath.classLocationBased(c)); //"class file path" approach #1
-		ret.put("System property java.class.path", JarPath::property_javaclasspath); //"class file path" approach #2
-		ret.put("System property user.dir", JarPath::property_userdir); //"working directory" approach #1
-		ret.put("new File(\"\")" , JarPath::fileBased); //"working directory" approach #2
-		ret.keySet().forEach(k -> ret.put(k, fixPath(ret.get(k))));
+	/**
+	 * Get list of candidates used to find jar path.
+	 * 
+	 * @param c
+	 * @return
+	 */
+	public static List<CandidateEntry> getCandidates(Class<?> c) {
+		LinkedList<CandidateEntry> ret = new LinkedList<>();		
+		ret.add(new CandidateEntry("System property user.dir", JarPath::property_userdir)); //"working directory" approach #1
+		ret.add(new CandidateEntry("new File(\"\")" , JarPath::fileBased)); //"working directory" approach #2
+		
+		ret.add(new CandidateEntry(c.getSimpleName() + "Class ProtectionDomain CodeSource location", JarPath.classLocationBased(c))); //"class file path" approach #1
+		ret.add(new CandidateEntry("System property java.class.path", JarPath::property_javaclasspath)); //"class file path" approach #2
+
+		if(classPathSearchFirst) Collections.reverse(ret);
+		
+		ret.add(0, new CandidateEntry("System property jpackage.app-path", JarPath::jpackage)); 
+		
 		return ret;
 	}
 	
+	/**
+	 * Stores the path candidate generator.
+	 * Entry has the path generator method(the result can be acquired via
+	 * {@link CandidateEntry#generatePath()}), and its description(
+	 * {@link CandidateEntry#getDescription()}).
+	 */
+	public static class CandidateEntry {
+		private final String description;
+		private final Supplier<String> gen;
+
+		public CandidateEntry(String description, Supplier<String> gen) {
+			this.description = description;
+			this.gen = () -> {
+				String get = gen.get();
+				if(get == null) {
+					if(isDebug()) {
+						System.out.println("[JarPath|debug] Candidate \"" + description + "\" returned null!");
+					}
+					return null;
+				}
+				File f = new File(get).getAbsoluteFile();
+				while (!f.isDirectory()) f = f.getParentFile();
+				String ret = f.getAbsolutePath();
+				if (System.getProperty("jpackage.app-path") != null && !ret.endsWith("app")) {
+					ret += File.separator + "app";
+				}
+				return ret;
+			};
+		}
+		
+		/**
+		 * Get description of this path candidate generator method for debug.
+		 * @return description of this path candidate generator method
+		 */
+		public String getDescription() {
+			return description;
+		}
+		
+		/**
+		 * Evaluate the {@code Supplier} and return it.
+		 * @return possible jar path
+		 */
+		public String generatePath() {
+			String ret = null;
+			try {
+				ret = gen.get();
+			} catch (Exception e) {
+				if(isDebug()) e.printStackTrace();
+			}
+			return ret;
+		}
+		
+		@Override
+		public String toString() {
+			return getDescription() + " : " + generatePath();
+		}
+	}
 	
 	/**
 	 * Get project path by getting system property jpackage
@@ -150,8 +272,9 @@ public class JarPath {
 	/**
 	 * Get project path by getting system property user.dir
 	 * 
-	 * This actually get a working directory, not a path of actual working directory.
-	 * It works at most cases, but not when running the jar by command prompt whose working directory is not where jar file located.
+	 * This actually get a working directory.
+	 * It works at most cases, but not when running the jar by command prompt
+	 * whose working directory is not where jar file located.
 	 * */
 	private static String property_userdir() {
 		return System.getProperty("user.dir");
@@ -159,8 +282,9 @@ public class JarPath {
 	/**
 	 * Get project path by getting absolute path of new File("")
 	 * 
-	 * This actually get a working directory, not a path of actual working directory.
-	 * It works at most cases, but not when running the jar by command prompt whose working directory is not where jar file located.   
+	 * This actually get a working directory.
+	 * It works at most cases, but not when running the jar by command prompt
+	 * whose working directory is not where jar file located.   
 	 * */
 	private static String fileBased() {
 		return new File("").getAbsolutePath();
@@ -182,25 +306,6 @@ public class JarPath {
 	private static Supplier<String> classLocationBased(Class<?> cl) { 
 		return () -> urlToFile(getLocation(cl)).getAbsolutePath();
 	}
-	
-	
-	private static Supplier<String> fixPath(Supplier<String> candidate) {
-		return () -> {
-			String get = null;
-			try {
-				get = candidate.get();
-			} catch(Exception e) {}
-			if(get == null) return null;
-			File f = new File(get).getAbsoluteFile();
-			while (!f.isDirectory()) f = f.getParentFile();
-			String ret = f.getAbsolutePath();
-			if (System.getProperty("jpackage.app-path") != null && !ret.endsWith("app")) {
-				ret += File.separator + "app";
-			}
-			return ret;
-		};
-	}
-	
 	
 	/**
 	 * Gets the base location of the given class.
@@ -229,7 +334,7 @@ public class JarPath {
 	        	return codeSourceLocation;
 	    }
 	    catch (SecurityException | NullPointerException e) {
-	    	e.printStackTrace();
+	    	if(isDebug()) e.printStackTrace();
 	    }
 
 	    // NB: The easy way failed, so we try the hard way. We ask for the class
@@ -238,11 +343,17 @@ public class JarPath {
 
 	    // get the class's raw resource path
 	    final URL classResource = c.getResource(c.getSimpleName() + ".class");
-	    if (classResource == null) return null; // cannot find class resource
+	    if (classResource == null) {
+	    	if(isDebug()) System.out.println("[JarPath|debug] JarPath.getLocation : Cannot find class resource");
+	    	return null; // cannot find class resource
+	    }
 
 	    final String url = classResource.toString();
 	    final String suffix = c.getCanonicalName().replace('.', '/') + ".class";
-	    if (!url.endsWith(suffix)) return null; // weird URL
+	    if (!url.endsWith(suffix)) {
+	    	if(isDebug()) System.out.println("[JarPath|debug] JarPath.getLocation : Weird URL");
+	    	return null; // weird URL
+	    }
 
 	    // strip the class's path from the URL string
 	    final String base = url.substring(0, url.length() - suffix.length());
@@ -255,6 +366,7 @@ public class JarPath {
 	    try {
 	        return new URI(path).toURL();
 	    } catch (MalformedURLException | URISyntaxException e) {
+	    	if(isDebug()) e.printStackTrace();
 	        return null;
 	    }
 	} 
@@ -296,14 +408,14 @@ public class JarPath {
 	        return new File(new URI(path));
 	    }
 	    catch (final URISyntaxException e) {
-	    	e.printStackTrace();
+	    	if(isDebug()) e.printStackTrace();
 	    }
 	    if (path.startsWith("file:")) {
 	        // pass through the URL as-is, minus "file:" prefix
 	        path = path.substring(5);
 	        return new File(path);
 	    }
-	    System.out.println("Invalid url : " + url);
+	    if(isDebug()) System.out.println("[JarPath|debug] Invalid url : " + url);
 	    return null;
 	}
 }
