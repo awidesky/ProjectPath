@@ -6,7 +6,7 @@
 
 ## Requirements
 
-**ProjectPath** requires Java 8 or later, and it does not need any other dependency.
+**ProjectPath** requires Java 17 or later, and it does not need any other dependency.
 
 ## How to use
 
