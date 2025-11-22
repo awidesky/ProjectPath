@@ -9,9 +9,7 @@
 
 package io.github.awidesky.projectPath;
 
-import java.io.File;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.nio.file.Paths;
 
 /**
  * Generate user's application local data folder.
@@ -39,7 +37,7 @@ public class UserDataPath {
 	 * @param subFolders the names of subdirectories under application local folder
 	 */
 	public static String appLocalFolder(String... subFolders) {
-		return appLocalRoot + File.separator + Stream.of(subFolders).collect(Collectors.joining(File.separator));
+		return Paths.get(appLocalRoot, subFolders).toAbsolutePath().toString();
 	}
 
 	/**
